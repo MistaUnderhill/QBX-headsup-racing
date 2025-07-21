@@ -29,3 +29,16 @@ RegisterNetEvent('qb-street-race:startRaceRadial')
 AddEventHandler('qb-street-race:startRaceRadial', function()
     TriggerServerEvent('qb-street-race:startRaceServer')
 end)
+
+RegisterNetEvent('qb-street-race:inviteToRace')
+AddEventHandler('qb-street-race:inviteToRace', function(initiator)
+    local accept = lib.alertDialog({
+        header = 'Street Race Invitation',
+        content = 'Another racer is inviting you to a street race. Buy-in: $' .. Config.BuyInAmount,
+        centered = true,
+        cancel = true
+    })
+
+    local accepted = (accept == 'confirm')
+    TriggerServerEvent('qb-street-race:raceResponse', accepted, initiator)
+end)
