@@ -1,7 +1,7 @@
 # QBX Street Race Script
 
 ## Features
-- Multiplayer street racing
+- Multiplayer street racing from current location to random GPS
 - Buy-in pot and payout system
 - Leaderboard with win tracking
 - Tax option for server cut
