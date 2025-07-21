@@ -6,54 +6,78 @@ local checkpoint = nil
 RegisterNetEvent('qb-street-race:startRaceServer')
 AddEventHandler('qb-street-race:startRaceServer', function()
     local src = source
-    local players = QBCore.Functions.GetPlayers()
-    local initiator = QBCore.Functions.GetPlayer(src)
-    local coords = GetEntityCoords(GetPlayerPed(src))
-
     if activeRace then
         TriggerClientEvent('QBCore:Notify', src, "A race is already in progress.", "error")
         return
     end
 
-    raceParticipants = {}
+    local initiator = QBCore.Functions.GetPlayer(src)
+    local coords = GetEntityCoords(GetPlayerPed(src))
+    local allPlayers = QBCore.Functions.GetPlayers()
+    local invited = {}
 
-    for _, id in ipairs(players) do
-        local player = QBCore.Functions.GetPlayer(id)
-        if player and player.PlayerData.job.name ~= "police" then
-            local ped = GetPlayerPed(id)
-            if IsPedInAnyVehicle(ped, false) then
-                local pos = GetEntityCoords(ped)
-                if #(pos - coords) <= Config.JoinDistance then
-                    local bank = player.Functions.GetMoney("bank")
-                    if bank >= Config.BuyInAmount then
-                        player.Functions.RemoveMoney("bank", Config.BuyInAmount, "street-race-buyin")
-                        raceParticipants[#raceParticipants + 1] = id
-                        TriggerClientEvent('QBCore:Notify', id, "You’ve joined the race!", "success")
-                    else
-                        TriggerClientEvent('QBCore:Notify', id, "Not enough money for race entry.", "error")
-                    end
-                end
+    -- Invite nearby players in vehicles
+    for _, id in ipairs(allPlayers) do
+        local ped = GetPlayerPed(id)
+        if IsPedInAnyVehicle(ped, false) then
+            local pos = GetEntityCoords(ped)
+            if #(pos - coords) <= Config.JoinDistance then
+                TriggerClientEvent('qb-street-race:inviteToRace', id, src)
+                table.insert(invited, id)
             end
         end
     end
 
-    if #raceParticipants < 2 then
-        for _, id in ipairs(raceParticipants) do
-            local p = QBCore.Functions.GetPlayer(id)
-            if p then
-                p.Functions.AddMoney("bank", Config.BuyInAmount, "race-refund")
-                TriggerClientEvent('QBCore:Notify', id, "Race canceled. Not enough players.", "error")
-            end
-        end
-        raceParticipants = {}
+    if #invited < 2 then
+        TriggerClientEvent('QBCore:Notify', src, "Not enough players nearby to start a race.", "error")
         return
     end
 
-    checkpoint = GetRandomCheckpoint(coords)
+    -- Wait for responses
     activeRace = true
+    raceParticipants = {}
+    checkpoint = GetRandomCheckpoint(coords)
 
-    for _, id in ipairs(raceParticipants) do
-        TriggerClientEvent('qb-street-race:startClientRace', id, checkpoint)
+    CreateThread(function()
+        Wait(10000) -- 10 second response window
+
+        if #raceParticipants < 2 then
+            for _, id in ipairs(raceParticipants) do
+                local p = QBCore.Functions.GetPlayer(id)
+                if p then
+                    p.Functions.AddMoney("bank", Config.BuyInAmount, "race-refund")
+                    TriggerClientEvent('QBCore:Notify', id, "Race canceled. Not enough participants.", "error")
+                end
+            end
+            activeRace = false
+            raceParticipants = {}
+            return
+        end
+
+        -- Start race
+        for _, id in ipairs(raceParticipants) do
+            TriggerClientEvent('qb-street-race:startClientRace', id, checkpoint)
+        end
+    end)
+end)
+
+RegisterNetEvent('qb-street-race:raceResponse')
+AddEventHandler('qb-street-race:raceResponse', function(accepted, initiator)
+    local src = source
+    local player = QBCore.Functions.GetPlayer(src)
+    if not player or not activeRace then return end
+
+    if accepted then
+        local bank = player.Functions.GetMoney("bank")
+        if bank >= Config.BuyInAmount then
+            player.Functions.RemoveMoney("bank", Config.BuyInAmount, "street-race-buyin")
+            table.insert(raceParticipants, src)
+            TriggerClientEvent('QBCore:Notify', src, "You’ve joined the race!", "success")
+        else
+            TriggerClientEvent('QBCore:Notify', src, "Not enough money to join the race.", "error")
+        end
+    else
+        TriggerClientEvent('QBCore:Notify', src, "You declined the race.", "primary")
     end
 end)
 
