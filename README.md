@@ -19,8 +19,11 @@ CREATE TABLE IF NOT EXISTS street_race_leaderboard (
 Place the following files in your resource folder:
 
 config.lua
+
 fxmanifest.lua
+
 server.lua
+
 client.lua
 
 Start resource
