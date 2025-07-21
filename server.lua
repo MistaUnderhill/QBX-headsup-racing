@@ -129,8 +129,22 @@ AddEventHandler('qb-street-race:getLeaderboard', function()
 end)
 
 function GetRandomCheckpoint(origin)
-    local x = origin.x + math.random(Config.MinDistance, Config.MaxDistance)
-    local y = origin.y + math.random(Config.MinDistance, Config.MaxDistance)
+    local min = Config.MinDistance
+    local max = Config.MaxDistance
+    local angle = math.random() * 2 * math.pi
+    local distance = math.random(min, max)
+    
+    local x = origin.x + distance * math.cos(angle)
+    local y = origin.y + distance * math.sin(angle)
     local z = origin.z
-    return vector3(x, y, z)
+
+    -- Ensure it's on a road
+    local found, roadCoord = GetNthClosestVehicleNode(x, y, 0, 1, 3.0, 0.0)
+
+    if found then
+        return roadCoord
+    else
+        -- Fallback: return origin + forward offset if no node found (very rare)
+        return vec3(x, y, z)
+    end
 end
