@@ -18,7 +18,6 @@ CREATE TABLE IF NOT EXISTS street_race_leaderboard (
     name VARCHAR(100),
     wins INT DEFAULT 0
 );
-,
 ```
 
 ### 2. Add to server.cfg:
