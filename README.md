@@ -9,6 +9,7 @@ Installation
 Create database table
 
 Run this SQL in your MySQL database:
+
 CREATE TABLE IF NOT EXISTS street_race_leaderboard (
     identifier VARCHAR(64) PRIMARY KEY,
     name VARCHAR(100),
