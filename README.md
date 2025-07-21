@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS street_race_leaderboard (
 ensure qb-street-race
 ```
 
-3. Radial Menu:
+### 3. Radial Menu:
 Add this to your radial menu config:
 ```
 {
@@ -37,7 +37,7 @@ Add this to your radial menu config:
     end
 }
 ```
-Usage
+### Usage
 Go near others in vehicles and use the radial menu to start a race.
 
 Players nearby in cars will automatically be included.
@@ -46,7 +46,7 @@ Winner receives pot after tax.
 
 View top 10 with /raceleaderboard
 
-Config
+### Config
 Located in config.lua.
 ```
 Config.BuyInAmount = 5000
