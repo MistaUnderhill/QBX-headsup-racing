@@ -6,6 +6,7 @@
 - Leaderboard with win tracking
 - Tax option for server cut
 - Radial menu race start
+- two racer minimum to start
 
 ## Setup
 
