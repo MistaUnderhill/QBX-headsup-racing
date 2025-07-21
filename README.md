@@ -19,10 +19,10 @@ CREATE TABLE IF NOT EXISTS street_race_leaderboard (
     wins INT DEFAULT 0
 );
 
-### 2. Add to server.cfg
+### 2. Add to server.cfg:
 ensure qb-street-race
 
-**### 3. Radial Menu**
+### 3. Radial Menu:
 Add this to your radial menu config:
 
 {
