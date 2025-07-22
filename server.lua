@@ -2,7 +2,7 @@ local QBCore = exports['qbx-core']:GetCoreObject()
 local raceParticipants = {}
 local raceInProgress = false
 local checkpoint = nil
-local COUNTDOWN_TIME = Config.CountdownTime or 3
+local COUNTDOWN_TIME = Config.CountdownTime
 
 -- Handle player joining the race
 RegisterNetEvent('streetrace:playerReady')
