@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS street_race_leaderboard (
 
 ### 2. Add to server.cfg:
 ```
-ensure QBX-headsup-racing
+ensure qb-street-racing
 ```
 
 ### 3. Radial Menu:
