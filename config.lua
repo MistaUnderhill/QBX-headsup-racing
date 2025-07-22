@@ -12,3 +12,6 @@ Config.MaxBuyIn = 5000
 
 -- Tax settings (set to 0 for no tax, or a value like 0.1 for 10%)
 Config.RaceTax = 0.0
+
+-- Countdown time in seconds before race start (locked players + countdown)
+Config.CountdownTime = 3
