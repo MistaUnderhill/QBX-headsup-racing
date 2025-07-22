@@ -1,52 +1,30 @@
 local QBCore = exports['qbx-core']:GetCoreObject()
 local inRace = false
+local inCountdown = false
 local checkpoint = nil
 local raceBlip = nil
 
-RegisterCommand("startrace", function()
-    local ped = PlayerPedId()
-    local vehicle = GetVehiclePedIsIn(ped, false)
-    if vehicle == 0 then
-        Notify("You must be in a vehicle to start a race.")
-        return
-    end
-
-    local playersNearby = GetPlayersInVehicleRadius(Config.JoinDistance)
-    if #playersNearby < 2 then
-        Notify("Need at least 2 racers nearby to start a race.")
-        return
-    end
-
-    -- Ask for buy-in
-    local input = lib.inputDialog("Set Buy-In", {
-        { type = "number", label = "Buy-In Amount ($500 - $5000)", min = 500, max = 5000, required = true }
-    })
-
-    if input then
-        local buyIn = math.floor(tonumber(input[1]))
-        if buyIn >= 500 and buyIn <= 5000 then
-            for _, id in ipairs(playersNearby) do
-                TriggerServerEvent('streetrace:playerReadyPrompt', GetPlayerServerId(id), buyIn)
-            end
-        else
-            Notify("Invalid amount. Must be between $500 and $5000.")
-        end
-    end
+RegisterNetEvent('streetrace:notify', function(msg)
+    QBCore.Functions.Notify(msg, "primary")
 end)
 
-RegisterNetEvent('streetrace:joinRacePrompt', function(buyIn)
-    local input = lib.inputDialog("Race Invitation", {
-        { type = "select", label = ("Join Race for $%s?"):format(buyIn), options = {
-            { value = "yes", label = "Yes" },
-            { value = "no", label = "No" },
-        }}
-    })
+RegisterNetEvent('streetrace:lockPlayer', function(lock)
+    local ped = PlayerPedId()
+    FreezeEntityPosition(ped, lock)
+end)
 
-    if input and input[1] == "yes" then
-        TriggerServerEvent('streetrace:playerReady', buyIn)
-    else
-        TriggerServerEvent('streetrace:playerDecline')
-    end
+RegisterNetEvent('streetrace:startCountdown', function(seconds)
+    inCountdown = true
+    Citizen.CreateThread(function()
+        local count = seconds
+        while count > 0 do
+            Citizen.Wait(0)
+            DrawTxt(0.5, 0.4, 1.0, 1.0, 1.0, tostring(count), 255, 0, 0, 255)
+            Citizen.Wait(1000)
+            count = count - 1
+        end
+        inCountdown = false
+    end)
 end)
 
 RegisterNetEvent('streetrace:startRace', function(coords)
@@ -61,13 +39,13 @@ RegisterNetEvent('streetrace:startRace', function(coords)
     SetBlipRoute(raceBlip, true)
     SetBlipRouteColour(raceBlip, 5)
 
-    Notify("Race started! First to the checkpoint wins!")
+    QBCore.Functions.Notify("Race started! First to the checkpoint wins!", "success")
 end)
 
 CreateThread(function()
     while true do
-        Wait(500)
-        if inRace and checkpoint then
+        Citizen.Wait(500)
+        if inRace and checkpoint and not inCountdown then
             local ped = PlayerPedId()
             local dist = #(GetEntityCoords(ped) - checkpoint)
             if dist < 25.0 then
@@ -82,25 +60,17 @@ CreateThread(function()
     end
 end)
 
-function GetPlayersInVehicleRadius(radius)
-    local players = {}
-    local playerPed = PlayerPedId()
-    local playerCoords = GetEntityCoords(playerPed)
-
-    for _, id in ipairs(GetActivePlayers()) do
-        local targetPed = GetPlayerPed(id)
-        if targetPed ~= playerPed and IsPedInAnyVehicle(targetPed, false) then
-            local targetCoords = GetEntityCoords(targetPed)
-            if #(playerCoords - targetCoords) < radius then
-                table.insert(players, id)
-            end
-        end
-    end
-
-    return players
-end
-
-function Notify(msg)
-    -- No qb-notify dependency
-    QBCore.Functions.Notify(msg, "primary")
+-- Helper function to draw text on screen
+function DrawTxt(x, y, width, height, scale, text, r, g, b, a)
+    SetTextFont(4)
+    SetTextProportional(0)
+    SetTextScale(scale, scale)
+    SetTextColour(r, g, b, a)
+    SetTextDropShadow(0, 0, 0, 0, 255)
+    SetTextEdge(1, 0, 0, 0, 255)
+    SetTextDropShadow()
+    SetTextOutline()
+    SetTextEntry("STRING")
+    AddTextComponentString(text)
+    DrawText(x - width/2, y - height/2)
 end
