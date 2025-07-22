@@ -1,44 +1,50 @@
-RegisterCommand("raceleaderboard", function()
-    TriggerServerEvent('qb-street-race:getLeaderboard')
-end, false)
+RegisterNetEvent('qb-street-race:promptJoin', function(buyIn)
+    local accept = lib.alertDialog({
+        header = 'Street Race Invite',
+        content = "Buy-in: $" .. buyIn .. "\nDo you want to join?",
+        centered = true,
+        cancel = true
+    })
 
-RegisterNetEvent('qb-street-race:startClientRace')
-AddEventHandler('qb-street-race:startClientRace', function(checkpoint)
-    local playerPed = PlayerPedId()
-    local blip = AddBlipForCoord(checkpoint.x, checkpoint.y, checkpoint.z)
-    SetBlipRoute(blip, true)
-    SetBlipRouteColour(blip, 5)
+    if accept == 'confirm' then
+        TriggerServerEvent('qb-street-race:playerAccepted')
+    end
+end)
 
-    local raceActive = true
+RegisterNetEvent('qb-street-race:startRace', function(checkpoint)
+    local ped = PlayerPedId()
+    SetNewWaypoint(checkpoint.x, checkpoint.y)
+    lib.notify({type = 'inform', description = "Race started! Reach the checkpoint."})
 
     CreateThread(function()
-        while raceActive do
-            Wait(1000)
-            local pos = GetEntityCoords(playerPed)
-            if #(pos - checkpoint) < 15.0 then
-                raceActive = false
-                RemoveBlip(blip)
+        local finished = false
+        while not finished do
+            Wait(500)
+            local dist = #(GetEntityCoords(ped) - checkpoint)
+            if dist < 10.0 then
+                finished = true
                 TriggerServerEvent('qb-street-race:finishRace')
             end
         end
     end)
 end)
 
--- Radial Menu Integration
-RegisterNetEvent('qb-street-race:startRaceRadial')
-AddEventHandler('qb-street-race:startRaceRadial', function()
-    TriggerServerEvent('qb-street-race:startRaceServer')
-end)
+lib.registerRadial({
+    id = 'start_race',
+    label = 'Start Street Race',
+    icon = 'car',
+    onSelect = function()
+        local input = lib.inputDialog('Set Race Buy-In', {
+            {type = 'number', label = 'Buy-In Amount ($)', icon = 'dollar-sign', required = true, min = Config.MinBuyIn, max = Config.MaxBuyIn}
+        })
 
-RegisterNetEvent('qb-street-race:inviteToRace')
-AddEventHandler('qb-street-race:inviteToRace', function(initiator)
-    local accept = lib.alertDialog({
-        header = 'Street Race Invitation',
-        content = 'Another racer is inviting you to a street race. Buy-in: $' .. Config.BuyInAmount,
-        centered = true,
-        cancel = true
-    })
-
-    local accepted = (accept == 'confirm')
-    TriggerServerEvent('qb-street-race:raceResponse', accepted, initiator)
-end)
+        if input and input[1] then
+            local buyIn = tonumber(input[1])
+            if buyIn >= Config.MinBuyIn and buyIn <= Config.MaxBuyIn then
+                TriggerServerEvent('qb-street-race:initiateRace', buyIn)
+            else
+                lib.notify({type = 'error', description = 'Buy in must be between 500 and 5000.'})
+            end
+        end
+    end
+})
