@@ -1,8 +1,14 @@
 Config = {}
 
+-- Distance (in meters) from race start to checkpoint
+Config.RaceDistance = 1000.0
+
+-- Radius to check for players in vehicles near the race starter
+Config.JoinDistance = 50.0
+
+-- Buy-in settings
 Config.MinBuyIn = 500
-Config.MaxBuyIn = 5000          -- Entry fee per racer
-Config.MinDistance = 1000          -- Minimum checkpoint distance
-Config.MaxDistance = 1500          -- Maximum checkpoint distance
-Config.TaxPercent = 0.15           -- Server tax cut (0.0 to 1.0)
-Config.JoinDistance = 50.0         -- Max distance to join race (in meters)
+Config.MaxBuyIn = 5000
+
+-- Tax settings (set to 0 for no tax, or a value like 0.1 for 10%)
+Config.RaceTax = 0.0
