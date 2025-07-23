@@ -1,140 +1,167 @@
 local QBCore = exports['qbx-core']:GetCoreObject()
-local raceParticipants = {}
-local raceInProgress = false
-local checkpoint = nil
-local COUNTDOWN_TIME = Config.CountdownTime
+local participants = {}
+local readyStatus = {}
+local raceData = {
+    isActive = false,
+    buyIn = 0,
+    coords = nil
+}
 
--- Handle player joining the race
-RegisterNetEvent('streetrace:playerReady')
-AddEventHandler('streetrace:playerReady', function(buyIn)
+local function resetRace()
+    for _, data in pairs(participants) do
+        local src = data.src
+        QBCore.Functions.SetPlayerMeta(src, 'inrace', false)
+        TriggerClientEvent('qbx-street-racing:unlockPlayer', src)
+    end
+    participants = {}
+    readyStatus = {}
+    raceData = { isActive = false, buyIn = 0, coords = nil }
+end
+
+RegisterNetEvent('qbx-street-racing:startRaceRadial', function()
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return end
 
-    if Player.Functions.RemoveMoney("bank", buyIn, "street-race-buyin") then
-        raceParticipants[src] = { name = Player.PlayerData.charinfo.firstname .. " " .. Player.PlayerData.charinfo.lastname, accepted = true, buyIn = buyIn }
-        TriggerClientEvent('streetrace:notify', src, "You joined the race for $" .. buyIn)
-
-        -- If race has enough players, start countdown and race
-        if CountAcceptedPlayers() >= 2 and not raceInProgress then
-            raceInProgress = true
-            checkpoint = GetValidTrafficNode(GetEntityCoords(GetPlayerPed(src)), Config.RaceDistance)
-            StartRaceCountdown(GetAcceptedPlayers(), checkpoint)
-        end
-    else
-        TriggerClientEvent('streetrace:notify', src, "Not enough money in bank.")
+    if raceData.isActive then
+        TriggerClientEvent('QBCore:Notify', src, 'A race is already in progress!', 'error')
+        return
     end
-end)
 
--- Handle player declining
-RegisterNetEvent('streetrace:playerDecline')
-AddEventHandler('streetrace:playerDecline', function()
-    local src = source
-    raceParticipants[src] = nil
-    TriggerClientEvent('streetrace:notify', src, "You declined the race.")
-end)
+    local buyIn = 0
+    TriggerClientEvent('QBCore:Notify', src, 'Set your buy-in between $'..Config.MinBuyIn..' - $'..Config.MaxBuyIn, 'primary')
+    
+    -- For simplicity in this example, we're setting static buyIn
+    buyIn = Config.MinBuyIn
 
--- Handle race completion
-RegisterNetEvent('streetrace:finished')
-AddEventHandler('streetrace:finished', function()
-    local src = source
-    if raceInProgress and raceParticipants[src] then
-        local totalPot = 0
-        for id, data in pairs(raceParticipants) do
-            totalPot = totalPot + data.buyIn
-        end
-
-        local tax = Config.RaceTax and math.floor(totalPot * Config.RaceTax) or 0
-        local winnings = totalPot - tax
-
-        local Player = QBCore.Functions.GetPlayer(src)
-        if Player then
-            Player.Functions.AddMoney("bank", winnings, "street-race-winnings")
-            MySQL.update('UPDATE streetrace_leaderboard SET wins = wins + 1 WHERE identifier = ?', { Player.PlayerData.citizenid })
-
-            TriggerClientEvent('streetrace:notify', src, "You won the race and earned $" .. winnings)
-        end
-
-        -- Reset state
-        raceParticipants = {}
-        raceInProgress = false
-        checkpoint = nil
-    end
-end)
-
--- Leaderboard fetch callback
-QBCore.Functions.CreateCallback('streetrace:getLeaderboard', function(_, cb)
-    MySQL.query('SELECT * FROM streetrace_leaderboard ORDER BY wins DESC LIMIT 10', {}, function(results)
-        cb(results)
-    end)
-end)
-
--- Setup player in leaderboard DB
-AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
-    local Player = QBCore.Functions.GetPlayer(player)
-    if Player then
-        local citizenid = Player.PlayerData.citizenid
-        MySQL.query('SELECT * FROM streetrace_leaderboard WHERE identifier = ?', { citizenid }, function(result)
-            if not result[1] then
-                MySQL.insert('INSERT INTO streetrace_leaderboard (identifier, name, wins) VALUES (?, ?, ?)', {
-                    citizenid,
-                    Player.PlayerData.charinfo.firstname .. " " .. Player.PlayerData.charinfo.lastname,
-                    0
-                })
+    local players = QBCore.Functions.GetPlayers()
+    for _, id in ipairs(players) do
+        if #participants >= Config.MaxRacers then break end
+        if id ~= src then
+            local targetPed = GetPlayerPed(id)
+            if IsPedInAnyVehicle(targetPed, false) then
+                local dist = #(GetEntityCoords(GetPlayerPed(src)) - GetEntityCoords(targetPed))
+                if dist < Config.JoinDistance then
+                    participants[#participants+1] = { src = id, confirmed = false }
+                    QBCore.Functions.SetPlayerMeta(id, 'inrace', true)
+                    TriggerClientEvent('qbx-street-racing:inviteToRace', id)
+                end
             end
-        end)
+        end
+    end
+
+    participants[#participants+1] = { src = src, confirmed = true }
+    QBCore.Functions.SetPlayerMeta(src, 'inrace', true)
+    raceData.buyIn = buyIn
+    raceData.isActive = true
+
+    CreateThread(function()
+        Wait(Config.ConfirmationTimeout * 1000)
+        local readyCount = 0
+        for _, p in pairs(participants) do
+            if p.confirmed then readyCount += 1 end
+        end
+
+        if readyCount < 2 then
+            for _, p in pairs(participants) do
+                TriggerClientEvent('QBCore:Notify', p.src, 'Racers not ready, race cancelled', 'error')
+            end
+            resetRace()
+            return
+        end
+
+        -- Generate destination
+        local origin = GetEntityCoords(GetPlayerPed(src))
+        local found, coords = GetNthClosestVehicleNode(origin.x, origin.y, origin.z, math.floor(Config.RaceDistance / 10), 0, 0, 0)
+        if not found then
+            TriggerClientEvent('QBCore:Notify', src, 'Could not find a valid race destination!', 'error')
+            resetRace()
+            return
+        end
+
+        raceData.coords = coords
+
+        for _, p in pairs(participants) do
+            if p.confirmed then
+                TriggerClientEvent('qbx-street-racing:lockPlayer', p.src)
+                TriggerClientEvent('qbx-street-racing:setCheckpoint', p.src, coords)
+                TriggerClientEvent('qbx-street-racing:startCountdown', p.src)
+            end
+        end
+    end)
+end)
+
+RegisterNetEvent('qbx-street-racing:confirmRace', function()
+    local src = source
+    for i, p in pairs(participants) do
+        if p.src == src then
+            local Player = QBCore.Functions.GetPlayer(src)
+            if Player.Functions.RemoveMoney('cash', raceData.buyIn) then
+                participants[i].confirmed = true
+                QBCore.Functions.Notify(src, 'Buy-in accepted, you are race ready.')
+            else
+                TriggerClientEvent('QBCore:Notify', src, 'Not enough cash for buy-in.', 'error')
+                participants[i].confirmed = false
+            end
+            break
+        end
     end
 end)
 
--- Helper: Count accepted players
-function CountAcceptedPlayers()
-    local count = 0
-    for _, data in pairs(raceParticipants) do
-        if data.accepted then count = count + 1 end
-    end
-    return count
-end
-
--- Helper: Get list of accepted players
-function GetAcceptedPlayers()
-    local list = {}
-    for playerId, data in pairs(raceParticipants) do
-        if data.accepted then
-            table.insert(list, playerId)
+RegisterNetEvent('qbx-street-racing:declineRace', function()
+    local src = source
+    for i, p in pairs(participants) do
+        if p.src == src then
+            participants[i].confirmed = false
+            break
         end
     end
-    return list
-end
+end)
 
--- Start countdown, lock players, then start race
-function StartRaceCountdown(racers, checkpoint)
-    for _, playerId in pairs(racers) do
-        TriggerClientEvent('streetrace:lockPlayer', playerId, true)
-        TriggerClientEvent('streetrace:startCountdown', playerId, COUNTDOWN_TIME)
-    end
+RegisterNetEvent('qbx-street-racing:unlockPlayer', function()
+    local src = source
+    TriggerClientEvent('qbx-street-racing:unlockPlayer', src)
+end)
 
-    Citizen.SetTimeout(COUNTDOWN_TIME * 1000, function()
-        for _, playerId in pairs(racers) do
-            TriggerClientEvent('streetrace:lockPlayer', playerId, false)
-            TriggerClientEvent('streetrace:startRace', playerId, checkpoint)
+RegisterNetEvent('qbx-street-racing:finishRace', function()
+    local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
+    local winnings = raceData.buyIn * #participants
+    local tax = Config.RaceTax * winnings
+    local payout = math.floor(winnings - tax)
+
+    Player.Functions.AddMoney('cash', payout)
+    local wins = Player.PlayerData.metadata['racewins'] or 0
+    Player.Functions.SetMetaData('racewins', wins + 1)
+    QBCore.Functions.Notify(src, 'You won the race! Payout: $'..payout)
+
+    resetRace()
+end)
+
+AddEventHandler('playerDropped', function(reason)
+    local src = source
+    for i, p in ipairs(participants) do
+        if p.src == src then
+            table.remove(participants, i)
+            break
         end
-    end)
-end
-
--- Ensure checkpoint is on a road near origin within given distance
-function GetValidTrafficNode(origin, distance)
-    local attempts = 20
-    while attempts > 0 do
-        local angle = math.random() * 2 * math.pi
-        local offset = vector3(
-            math.cos(angle) * distance,
-            math.sin(angle) * distance,
-            0.0
-        )
-        local testPos = origin + offset
-        local found, road = GetClosestVehicleNode(testPos.x, testPos.y, testPos.z, 1, 3.0, 0)
-        if found then return vector3(road.x, road.y, road.z) end
-        attempts = attempts - 1
     end
-    return origin -- fallback
-end
+end)
+
+RegisterNetEvent('qbx-street-racing:requestLeaderboard', function()
+    local src = source
+    local results = MySQL.query.await('SELECT name, metadata FROM players')
+    local leaderboard = {}
+
+    for _, result in pairs(results) do
+        local metadata = json.decode(result.metadata or '{}')
+        if metadata['racewins'] then
+            table.insert(leaderboard, {
+                name = result.name,
+                wins = metadata['racewins']
+            })
+        end
+    end
+
+    table.sort(leaderboard, function(a, b) return a.wins > b.wins end)
+    TriggerClientEvent('qbx-street-racing:showLeaderboard', src, leaderboard)
+end)
