@@ -52,6 +52,8 @@ View top 10 with /raceleaderboard
 ### Config
 Located in config.lua.
 ```
+-- config.lua
+
 -- Distance (in meters) from race start to checkpoint
 Config.RaceDistance = 1000.0
 
@@ -67,5 +69,12 @@ Config.RaceTax = 0.0
 
 -- Countdown time in seconds before race start (locked players + countdown)
 Config.CountdownTime = 3
+
+-- Timeout for racer confirmations (in seconds)
+Config.ConfirmationTimeout = 30
+
+-- Maximum number of racers allowed per race
+Config.MaxRacers = 10
+
 
 ```
