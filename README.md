@@ -14,10 +14,12 @@
 Run this in your database:
 
 ```sql
-CREATE TABLE IF NOT EXISTS street_race_leaderboard (
-    identifier VARCHAR(64) PRIMARY KEY,
-    name VARCHAR(100),
-    wins INT DEFAULT 0
+CREATE TABLE IF NOT EXISTS `players` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(64) NOT NULL,
+    `metadata` TEXT NOT NULL DEFAULT '{}',
+    -- other columns like identifiers, cash, etc. as per your existing schema
+    INDEX (`name`)
 );
 ```
 
