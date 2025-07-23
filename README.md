@@ -34,7 +34,7 @@ Add this to your radial menu config:
     title = "Start Street Race",
     icon = "flag-checkered",
     onSelect = function()
-        TriggerEvent('qbx-street-race:startRaceRadial')
+        TriggerEvent('qbx-street-racing:startRaceRadial')
     end
 }
 ```
