@@ -1,3 +1,5 @@
+-- config.lua
+
 Config = {}
 
 -- Distance (in meters) from race start to checkpoint
@@ -15,3 +17,9 @@ Config.RaceTax = 0.0
 
 -- Countdown time in seconds before race start (locked players + countdown)
 Config.CountdownTime = 3
+
+-- Timeout for racer confirmations (in seconds)
+Config.ConfirmationTimeout = 30
+
+-- Maximum number of racers allowed per race
+Config.MaxRacers = 10
