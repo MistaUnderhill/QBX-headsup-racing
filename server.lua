@@ -28,11 +28,6 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
 
-    if Player.PlayerData.metadata['inrace'] then
-        TriggerClientEvent('QBCore:Notify', src, 'You are already in a race.', 'error')
-        return
-    end
-
     if raceData.isActive then
         TriggerClientEvent('QBCore:Notify', src, 'The streets are too hot, try again in a few.', 'error')
         return
