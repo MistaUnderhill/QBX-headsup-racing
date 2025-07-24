@@ -126,7 +126,11 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
                 TriggerClientEvent('qbx-street-racing:resetInviteFlag', data.src)
             end
 
-            raceData = { isActive = false, buyIn = 0, coords = nil, confirmationOpen = false }
+            raceData.confirmationOpen = false  -- <-- Explicitly ensure this is false here as well
+            raceData.isActive = false
+            raceData.buyIn = 0
+            raceData.coords = nil
+
             participants = {}
             return
         end
@@ -137,6 +141,7 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
         end
     end)
 end)
+
 
 
 RegisterNetEvent('qbx-street-racing:confirmRace', function()
