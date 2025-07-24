@@ -17,7 +17,6 @@ local function resetRace()
         TriggerClientEvent('qbx-street-racing:resetInviteFlag', src)
     end
     participants = {}
-    readyStatus = {}
     raceData = { isActive = false, buyIn = 0, coords = nil }
     TriggerClientEvent('qbx-street-racing:resetRace', -1)
 end
@@ -63,7 +62,6 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
     }
 
     participants = {}
-    readyStatus = {}
 
     Player.Functions.SetMetaData('inrace', true)
     table.insert(participants, { src = src, name = Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname, confirmed = true })
