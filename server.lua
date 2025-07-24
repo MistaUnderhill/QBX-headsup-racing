@@ -168,11 +168,17 @@ AddEventHandler('playerDropped', function(reason)
     local src = source
     for i, p in ipairs(participants) do
         if p.src == src then
+            -- Reset 'inrace' metadata for this player
+            QBCore.Functions.SetPlayerMeta(src, 'inrace', false)
+            
+            -- Optionally, notify or log here (not required since player dropped)
+            
             table.remove(participants, i)
             break
         end
     end
 end)
+
 
 RegisterNetEvent('qbx-street-racing:requestLeaderboard', function()
     local src = source
