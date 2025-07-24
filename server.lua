@@ -37,7 +37,7 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
         TriggerClientEvent('QBCore:Notify', src, 'You are already in a race.', 'error')
         return
     end
-        
+
     if not buyIn or type(buyIn) ~= "number" or buyIn < Config.MinBuyIn or buyIn > Config.MaxBuyIn then
         TriggerClientEvent('QBCore:Notify', src, 'Buy-in must be between $'..Config.MinBuyIn..' and $'..Config.MaxBuyIn, 'error')
         return
@@ -49,8 +49,8 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
     end
 
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
-    local node, distance = GetNthClosestVehicleNode(playerCoords.x, playerCoords.y, playerCoords.z, Config.RaceDistance)
-    if not node then
+    local success, nodeX, nodeY, nodeZ = GetNthClosestVehicleNodeWithHeading(playerCoords.x, playerCoords.y, playerCoords.z, Config.RaceDistance, 0, 3.0, 0.0)
+    if not success then
         Player.Functions.AddMoney('cash', buyIn, "street-race-buyin-refund")
         TriggerClientEvent('QBCore:Notify', src, 'Failed to find a race destination.', 'error')
         return
@@ -59,7 +59,7 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
     raceData = {
         isActive = true,
         buyIn = buyIn,
-        coords = vector3(node.x, node.y, node.z),
+        coords = vector3(nodeX, nodeY, nodeZ),
         confirmationOpen = true 
     }
 
