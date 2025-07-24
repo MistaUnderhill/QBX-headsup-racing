@@ -3,7 +3,7 @@ game 'gta5'
 
 description 'QBX Street Racing Script'
 author 'Your Name'
-version '1.0.0'
+version '2.0.0'
 
 lua54 'yes'
 
@@ -13,5 +13,3 @@ client_script 'client.lua'
 server_script 'server.lua'
 
 dependency 'qbx-core'
-
-game_type 'street-race'
