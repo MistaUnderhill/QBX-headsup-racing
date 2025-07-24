@@ -19,6 +19,7 @@ local function resetRace()
     participants = {}
     readyStatus = {}
     raceData = { isActive = false, buyIn = 0, coords = nil }
+    TriggerClientEvent('qbx-street-racing:resetRace', -1)
 end
 
 
