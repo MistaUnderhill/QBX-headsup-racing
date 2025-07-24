@@ -122,20 +122,30 @@ end)
 
 RegisterNetEvent('qbx-street-racing:confirmRace', function()
     local src = source
+    local player = QBCore.Functions.GetPlayer(src)
+    if not player then return end
+
+    if not raceData.confirmationOpen then
+        TriggerClientEvent('QBCore:Notify', src, 'Race confirmation has expired.', 'error')
+        return
+    end
+
     for i, p in pairs(participants) do
         if p.src == src then
-            local Player = QBCore.Functions.GetPlayer(src)
-            if Player.Functions.RemoveMoney('cash', raceData.buyIn) then
-                participants[i].confirmed = true
-                QBCore.Functions.Notify(src, 'Buy-in accepted, you are race ready.')
-            else
-                TriggerClientEvent('QBCore:Notify', src, 'Not enough cash for buy-in.', 'error')
-                participants[i].confirmed = false
+            if not p.confirmed then
+                if player.Functions.RemoveMoney('cash', raceData.buyIn, "street-race-buyin") then
+                    participants[i].confirmed = true
+                    QBCore.Functions.SetPlayerMeta(src, 'inrace', true)
+                    TriggerClientEvent('QBCore:Notify', src, 'You have joined the race!', 'success')
+                else
+                    TriggerClientEvent('QBCore:Notify', src, 'Insufficient funds for buy-in.', 'error')
+                end
             end
             break
         end
     end
 end)
+
 
 RegisterNetEvent('qbx-street-racing:declineRace', function()
     local src = source
