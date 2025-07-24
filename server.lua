@@ -41,13 +41,19 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
     for _, id in ipairs(players) do
         if #participants >= Config.MaxRacers then break end
         if id ~= src then
-            local targetPed = GetPlayerPed(id)
-            if IsPedInAnyVehicle(targetPed, false) then
-                local dist = #(GetEntityCoords(GetPlayerPed(src)) - GetEntityCoords(targetPed))
-                if dist < Config.JoinDistance then
-                    participants[#participants+1] = { src = id, confirmed = false }
-                    QBCore.Functions.SetPlayerMeta(id, 'inrace', true)
-                    TriggerClientEvent('qbx-street-racing:inviteToRace', id)
+            -- Prevent players who are already in a race from joining another
+            local inRaceMeta = QBCore.Functions.GetPlayerMeta(id, 'inrace')
+            if inRaceMeta then
+                -- Skip this player since they are already in a race
+            else
+                local targetPed = GetPlayerPed(id)
+                if IsPedInAnyVehicle(targetPed, false) then
+                    local dist = #(GetEntityCoords(GetPlayerPed(src)) - GetEntityCoords(targetPed))
+                    if dist < Config.JoinDistance then
+                        participants[#participants+1] = { src = id, confirmed = false }
+                        QBCore.Functions.SetPlayerMeta(id, 'inrace', true)
+                        TriggerClientEvent('qbx-street-racing:inviteToRace', id)
+                    end
                 end
             end
         end
