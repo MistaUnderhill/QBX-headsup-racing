@@ -119,19 +119,30 @@ RegisterNetEvent('qbx-street-racing:confirmRace', function()
 
     for i, p in pairs(participants) do
         if p.src == src then
-            if not p.confirmed then
-                if player.Functions.RemoveMoney('cash', raceData.buyIn, "street-race-buyin") then
-                    participants[i].confirmed = true
-                    player.Functions.SetMetaData('inrace', true)
-                    TriggerClientEvent('QBCore:Notify', src, 'You have joined the race!', 'success')
-                else
-                    TriggerClientEvent('QBCore:Notify', src, 'Insufficient funds for buy-in.', 'error')
-                end
+            if p.confirmed then
+                TriggerClientEvent('QBCore:Notify', src, 'You have already confirmed.', 'error')
+                return
             end
-            break
+
+            if player.PlayerData.metadata['inrace'] then
+                TriggerClientEvent('QBCore:Notify', src, 'You are already in a race.', 'error')
+                return
+            end
+
+            if player.Functions.RemoveMoney('cash', raceData.buyIn, "street-race-buyin") then
+                participants[i].confirmed = true
+                player.Functions.SetMetaData('inrace', true)
+                TriggerClientEvent('QBCore:Notify', src, 'You have joined the race!', 'success')
+            else
+                TriggerClientEvent('QBCore:Notify', src, 'Insufficient funds for buy-in.', 'error')
+            end
+            return
         end
     end
+
+    TriggerClientEvent('QBCore:Notify', src, 'You were not invited to this race.', 'error')
 end)
+
 
 
 
