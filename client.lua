@@ -2,6 +2,23 @@ local QBCore = exports['qbx-core']:GetCoreObject()
 local isInvited = false
 local raceCheckpoint = nil
 
+-- New: Prompt buy-in and trigger server event for race start
+RegisterNetEvent('qbx-street-racing:startRaceRadial', function()
+    local input = lib.inputDialog('Street Race Buy-In', {
+        { type = 'number', label = 'Buy-In ($)', description = 'Enter your wager', min = Config.MinBuyIn, max = Config.MaxBuyIn, required = true }
+    })
+
+    if not input or not input[1] then return end
+
+    local buyIn = tonumber(input[1])
+    if not buyIn or buyIn < Config.MinBuyIn or buyIn > Config.MaxBuyIn then
+        QBCore.Functions.Notify('Invalid buy-in amount.', 'error')
+        return
+    end
+
+    TriggerServerEvent('qbx-street-racing:startRaceRadial', buyIn)
+end)
+
 RegisterNetEvent('qbx-street-racing:inviteToRace', function(data)
     if isInvited then return end
     isInvited = true
