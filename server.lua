@@ -217,15 +217,17 @@ end)
 
 RegisterNetEvent('qbx-street-racing:requestLeaderboard', function()
     local src = source
-    local results = MySQL.query.await('SELECT name, metadata FROM players')
+    local results = MySQL.query.await('SELECT metadata FROM players')
     local leaderboard = {}
 
     for _, result in pairs(results) do
         local metadata = json.decode(result.metadata or '{}')
-        if metadata['racewins'] then
+        local rpName = metadata['charinfo'] and metadata['charinfo']['firstname'] .. ' ' .. metadata['charinfo']['lastname'] or 'Unknown'
+        local wins = metadata['racewins'] or 0
+        if wins > 0 then
             table.insert(leaderboard, {
-                name = result.name,
-                wins = metadata['racewins']
+                name = rpName,
+                wins = wins
             })
         end
     end
@@ -233,7 +235,6 @@ RegisterNetEvent('qbx-street-racing:requestLeaderboard', function()
     table.sort(leaderboard, function(a, b) return a.wins > b.wins end)
     TriggerClientEvent('qbx-street-racing:showLeaderboard', src, leaderboard)
 end)
-
 
 AddEventHandler('onResourceStart', function(resourceName)
     if GetCurrentResourceName() ~= resourceName then return end
