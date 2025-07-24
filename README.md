@@ -1,12 +1,13 @@
 # QBX Street Race Script
 
 ## Features
-- Multiplayer street racing from current location to random GPS
-- Buy-in pot and payout system
+- Multiplayer street racing from current location to configurable GPS location
+- Buy-in pot / payout system - winner take all
 - Leaderboard with win tracking
 - Tax option for server cut
 - Radial menu race start
 - two racer minimum to start
+- fully open and configurable
 
 ## Setup
 
@@ -41,9 +42,9 @@ Add this to your radial menu config:
 }
 ```
 ### Usage
-Go near others in vehicles and use the radial menu to start a race.
+Drive near others in vehicles and use the radial menu to start a race.
 
-Players nearby in cars will automatically be included.
+Players nearby in cars will automatically be invited.
 
 Winner receives pot after tax.
 
