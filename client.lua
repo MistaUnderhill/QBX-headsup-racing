@@ -57,19 +57,20 @@ RegisterNetEvent('qbx-street-racing:lockPlayer', function()
 end)
 
 RegisterNetEvent('qbx-street-racing:startCountdown', function()
+    if isCountdownActive then return end  -- Prevent multiple countdowns
+    isCountdownActive = true
+
     local countdown = Config.CountdownTime
     CreateThread(function()
         while countdown > 0 do
-            TriggerEvent('chat:addMessage', {
-                args = { tostring(countdown) }
-            })
+            TriggerEvent('chat:addMessage', { args = { tostring(countdown) } })
             Wait(1000)
             countdown -= 1
         end
-        TriggerEvent('chat:addMessage', {
-            args = { 'GO!' }
-        })
+        TriggerEvent('chat:addMessage', { args = { 'GO!' } })
         TriggerServerEvent('qbx-street-racing:unlockPlayer')
+
+        isCountdownActive = false -- Reset flag when countdown finishes
     end)
 end)
 
