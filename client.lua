@@ -2,6 +2,7 @@ local QBCore = exports['qbx-core']:GetCoreObject()
 local isInvited = false
 local raceCheckpoint = nil
 local isCountdownActive = false
+local raceActive = false
 
 -- New: Prompt buy-in and trigger server event for race start
 RegisterNetEvent('qbx-street-racing:startRaceRadial', function()
@@ -84,21 +85,35 @@ RegisterNetEvent('qbx-street-racing:setCheckpoint', function(coords)
     if DoesBlipExist(raceCheckpoint) then
         RemoveBlip(raceCheckpoint)
     end
+
     raceCheckpoint = AddBlipForCoord(coords.x, coords.y, coords.z)
     SetBlipRoute(raceCheckpoint, true)
     SetBlipRouteColour(raceCheckpoint, 5)
 
+    raceActive = true  -- Race started/active
+
     CreateThread(function()
-        while true do
+        while raceActive do
             Wait(1000)
             local playerCoords = GetEntityCoords(PlayerPedId())
             if #(playerCoords - coords) < 5.0 then
                 TriggerServerEvent('qbx-street-racing:finishRace')
                 RemoveBlip(raceCheckpoint)
+                raceCheckpoint = nil
+                raceActive = false
                 break
             end
         end
     end)
+end)
+
+RegisterNetEvent('qbx-street-racing:resetRace', function()
+    raceActive = false
+    if DoesBlipExist(raceCheckpoint) then
+        RemoveBlip(raceCheckpoint)
+        raceCheckpoint = nil
+    end
+    -- Optionally reset other flags like isInvited etc.
 end)
 
 RegisterCommand("raceleaderboard", function()
