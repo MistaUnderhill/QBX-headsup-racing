@@ -11,6 +11,7 @@ local function resetRace()
         local src = data.src
         QBCore.Functions.SetPlayerMeta(src, 'inrace', false)
         TriggerClientEvent('qbx-street-racing:unlockPlayer', src)
+        TriggerClientEvent('qbx-street-racing:resetInviteFlag', src)
     end
     participants = {}
     readyStatus = {}
