@@ -34,9 +34,23 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
         return
     end
 
+    -- Validate buyIn amount first
+    if not buyIn or type(buyIn) ~= "number" or buyIn < Config.MinBuyIn or buyIn > Config.MaxBuyIn then
+        TriggerClientEvent('QBCore:Notify', src, 'Buy-in must be between $'..Config.MinBuyIn..' and $'..Config.MaxBuyIn, 'error')
+        return
+    end
+
+    -- Deduct initiator’s buy-in early
+    if not Player.Functions.RemoveMoney('cash', buyIn, "street-race-buyin") then
+        TriggerClientEvent('QBCore:Notify', src, 'Insufficient funds for buy-in.', 'error')
+        return
+    end
+
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
     local node, distance = GetNthClosestVehicleNode(playerCoords.x, playerCoords.y, playerCoords.z, Config.RaceDistance)
     if not node then
+        -- Refund initiator on failure to find node
+        Player.Functions.AddMoney('cash', buyIn, "street-race-buyin-refund")
         TriggerClientEvent('QBCore:Notify', src, 'Failed to find a race destination.', 'error')
         return
     end
@@ -51,15 +65,8 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
     participants = {}
     readyStatus = {}
 
-    -- Deduct initiator’s buy-in manually
-    if not Player.Functions.RemoveMoney('cash', buyIn) then
-        TriggerClientEvent('QBCore:Notify', src, 'Insufficient funds for buy-in.', 'error')
-        raceData = { isActive = false, buyIn = 0, coords = nil, confirmationOpen = false }
-        return
-    end
-
     Player.Functions.SetMetaData('inrace', true)
-    table.insert(participants, { src = src, name = Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname })
+    table.insert(participants, { src = src, name = Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname, confirmed = true })
 
     local players = QBCore.Functions.GetPlayers()
     for _, id in pairs(players) do
@@ -68,8 +75,9 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
             if other and not other.PlayerData.metadata['inrace'] then
                 local dist = #(GetEntityCoords(GetPlayerPed(id)) - playerCoords)
                 if dist <= Config.JoinRadius then
+                    table.insert(participants, { src = id, confirmed = false })
+                    other.Functions.SetMetaData('inrace', true)
                     TriggerClientEvent('qbx-street-racing:inviteToRace', id)
-                    TriggerClientEvent('qbx-street-racing:setCheckpoint', id, raceData.coords)
                 end
             end
         end
@@ -81,20 +89,43 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
 
         raceData.confirmationOpen = false 
 
-        if #participants < 2 then
-            for _, data in pairs(participants) do
+        -- Filter confirmed participants only
+        local confirmedParticipants = {}
+        for _, data in pairs(participants) do
+            if data.confirmed then
+                table.insert(confirmedParticipants, data)
+            else
                 local p = QBCore.Functions.GetPlayer(data.src)
                 if p then
                     p.Functions.SetMetaData('inrace', false)
                 end
-                TriggerClientEvent('QBCore:Notify', data.src, 'Not enough racers confirmed. Race canceled.', 'error')
+                TriggerClientEvent('QBCore:Notify', data.src, 'You declined or did not confirm the race.', 'error')
                 TriggerClientEvent('qbx-street-racing:unlockPlayer', data.src)
                 TriggerClientEvent('qbx-street-racing:resetInviteFlag', data.src)
             end
+        end
+        participants = confirmedParticipants
 
+        if #participants < 2 then
+            for _, data in pairs(participants) do
+                TriggerClientEvent('QBCore:Notify', data.src, 'Not enough racers confirmed. Race canceled.', 'error')
+                TriggerClientEvent('qbx-street-racing:unlockPlayer', data.src)
+                TriggerClientEvent('qbx-street-racing:resetInviteFlag', data.src)
+                local p = QBCore.Functions.GetPlayer(data.src)
+                if p then
+                    p.Functions.SetMetaData('inrace', false)
+                end
+            end
+            -- Refund initiator if race cancelled here, as race never started
+            local initiator = QBCore.Functions.GetPlayer(src)
+            if initiator then
+                initiator.Functions.AddMoney('cash', buyIn, "street-race-buyin-refund")
+                initiator.Functions.SetMetaData('inrace', false)
+            end
+
+            raceData = { isActive = false, buyIn = 0, coords = nil, confirmationOpen = false }
             participants = {}
             readyStatus = {}
-            raceData = { isActive = false, buyIn = 0, coords = nil, confirmationOpen = false }
             return
         end
 
@@ -105,6 +136,7 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
         end
     end)
 end)
+
 
 
 RegisterNetEvent('qbx-street-racing:confirmRace', function()
