@@ -6,7 +6,7 @@ Config = {}
 Config.RaceDistance = 1000.0
 
 -- Radius to check for players in vehicles near the race starter
-Config.JoinDistance = 50.0
+Config.JoinRadius = 50.0
 
 -- Buy-in settings
 Config.MinBuyIn = 500
