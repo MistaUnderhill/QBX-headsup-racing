@@ -1,6 +1,7 @@
 local QBCore = exports['qbx-core']:GetCoreObject()
 local isInvited = false
 local raceCheckpoint = nil
+local isCountdownActive = false
 
 -- New: Prompt buy-in and trigger server event for race start
 RegisterNetEvent('qbx-street-racing:startRaceRadial', function()
