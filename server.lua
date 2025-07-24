@@ -33,6 +33,16 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
         return
     end
 
+    if raceData.isActive then
+        TriggerClientEvent('QBCore:Notify', src, 'The streets are too hot, try again in a few.', 'error')
+        return
+    end
+
+    if Player.PlayerData.metadata['inrace'] then
+        TriggerClientEvent('QBCore:Notify', src, 'You are already in a race.', 'error')
+        return
+    end
+        
     -- Validate buyIn amount first
     if not buyIn or type(buyIn) ~= "number" or buyIn < Config.MinBuyIn or buyIn > Config.MaxBuyIn then
         TriggerClientEvent('QBCore:Notify', src, 'Buy-in must be between $'..Config.MinBuyIn..' and $'..Config.MaxBuyIn, 'error')
