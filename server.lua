@@ -156,11 +156,6 @@ RegisterNetEvent('qbx-street-racing:confirmRace', function()
                 return
             end
 
-            if player.PlayerData.metadata['inrace'] then
-                TriggerClientEvent('QBCore:Notify', src, 'You are already in a race.', 'error')
-                return
-            end
-
             if player.Functions.RemoveMoney('cash', raceData.buyIn, "street-race-buyin") then
                 participants[i].confirmed = true
                 player.Functions.SetMetaData('inrace', true)
@@ -174,6 +169,7 @@ RegisterNetEvent('qbx-street-racing:confirmRace', function()
 
     TriggerClientEvent('QBCore:Notify', src, 'You were not invited to this race.', 'error')
 end)
+
 
 
 
