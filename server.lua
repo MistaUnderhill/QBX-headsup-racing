@@ -179,10 +179,18 @@ RegisterNetEvent('qbx-street-racing:finishRace', function()
     local tax = Config.RaceTax * winnings
     local payout = math.floor(winnings - tax)
 
-    Player.Functions.AddMoney('cash', payout)
+    -- Prevent negative or zero payout
+    if payout <= 0 then
+        payout = 0
+        QBCore.Functions.Notify(src, 'You won the race, but the tax took all your winnings.', 'error')
+    else
+        Player.Functions.AddMoney('cash', payout)
+        QBCore.Functions.Notify(src, 'You won the race! Payout: $'..payout)
+    end
+
+    -- Always record the win, even with zero payout
     local wins = Player.PlayerData.metadata['racewins'] or 0
     Player.Functions.SetMetaData('racewins', wins + 1)
-    QBCore.Functions.Notify(src, 'You won the race! Payout: $'..payout)
 
     resetRace()
 end)
