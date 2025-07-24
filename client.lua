@@ -141,3 +141,6 @@ end)
 RegisterNetEvent('qbx-street-racing:resetInviteFlag', function()
     isInvited = false
 end)
+
+RegisterNetEvent('qbx-street-racing:showConfirmVisual', function()
+    QBCore.Functions.Notify("Race joined!", "success")
