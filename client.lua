@@ -110,3 +110,7 @@ RegisterNetEvent("qbx-street-racing:showLeaderboard", function(data)
         })
     end
 end)
+
+RegisterNetEvent('qbx-street-racing:resetInviteFlag', function()
+    isInvited = false
+end)
