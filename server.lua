@@ -114,18 +114,16 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
 
         if #participants < 2 then
             for _, data in pairs(participants) do
+                local p = QBCore.Functions.GetPlayer(data.src)
+                if p then
+                    if data.confirmed then
+                        p.Functions.AddMoney('cash', buyIn, "street-race-buyin-refund")
+                    end
+                    p.Functions.SetMetaData('inrace', false)
+                end
                 TriggerClientEvent('QBCore:Notify', data.src, 'Not enough racers confirmed. Race canceled.', 'error')
                 TriggerClientEvent('qbx-street-racing:unlockPlayer', data.src)
                 TriggerClientEvent('qbx-street-racing:resetInviteFlag', data.src)
-                local p = QBCore.Functions.GetPlayer(data.src)
-                if p then
-                    p.Functions.SetMetaData('inrace', false)
-                end
-            end
-            local initiator = QBCore.Functions.GetPlayer(src)
-            if initiator then
-                initiator.Functions.AddMoney('cash', buyIn, "street-race-buyin-refund")
-                initiator.Functions.SetMetaData('inrace', false)
             end
 
             raceData = { isActive = false, buyIn = 0, coords = nil, confirmationOpen = false }
@@ -139,7 +137,6 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
         end
     end)
 end)
-
 
 
 RegisterNetEvent('qbx-street-racing:confirmRace', function()
