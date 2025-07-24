@@ -4,7 +4,6 @@ local raceCheckpoint = nil
 local isCountdownActive = false
 local raceActive = false
 
--- New: Prompt buy-in and trigger server event for race start
 RegisterNetEvent('qbx-street-racing:startRaceRadial', function()
     local input = lib.inputDialog('Street Race Buy-In', {
         { type = 'number', label = 'Buy-In ($)', description = 'Enter your wager', min = Config.MinBuyIn, max = Config.MaxBuyIn, required = true }
