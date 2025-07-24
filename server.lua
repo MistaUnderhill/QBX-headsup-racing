@@ -224,12 +224,18 @@ end)
 
 RegisterNetEvent('qbx-street-racing:requestLeaderboard', function()
     local src = source
-    local results = MySQL.query.await('SELECT metadata FROM players')
+    local results = MySQL.query.await('SELECT name, metadata FROM players')
     local leaderboard = {}
 
     for _, result in pairs(results) do
         local metadata = json.decode(result.metadata or '{}')
-        local rpName = metadata['charinfo'] and metadata['charinfo']['firstname'] .. ' ' .. metadata['charinfo']['lastname'] or 'Unknown'
+        local rpName = "Unknown"
+        if metadata['charinfo'] and metadata['charinfo']['firstname'] and metadata['charinfo']['lastname'] then
+            rpName = metadata['charinfo']['firstname'] .. ' ' .. metadata['charinfo']['lastname']
+        else
+            rpName = result.name or "Unknown"
+        end
+
         local wins = metadata['racewins'] or 0
         if wins > 0 then
             table.insert(leaderboard, {
