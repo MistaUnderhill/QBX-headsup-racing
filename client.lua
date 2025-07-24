@@ -81,6 +81,8 @@ RegisterNetEvent('qbx-street-racing:unlockPlayer', function()
     FreezeEntityPosition(player, false)
 end)
 
+local checkpointThreadActive = false
+
 RegisterNetEvent('qbx-street-racing:setCheckpoint', function(coords)
     if DoesBlipExist(raceCheckpoint) then
         RemoveBlip(raceCheckpoint)
@@ -90,30 +92,40 @@ RegisterNetEvent('qbx-street-racing:setCheckpoint', function(coords)
     SetBlipRoute(raceCheckpoint, true)
     SetBlipRouteColour(raceCheckpoint, 5)
 
-    raceActive = true  -- Race started/active
+    raceActive = true
+    checkpointThreadActive = true
 
     CreateThread(function()
-        while raceActive do
+        while raceActive and checkpointThreadActive do
             Wait(1000)
             local playerCoords = GetEntityCoords(PlayerPedId())
             if #(playerCoords - coords) < 5.0 then
                 TriggerServerEvent('qbx-street-racing:finishRace')
-                RemoveBlip(raceCheckpoint)
-                raceCheckpoint = nil
+                if DoesBlipExist(raceCheckpoint) then
+                    RemoveBlip(raceCheckpoint)
+                    raceCheckpoint = nil
+                end
                 raceActive = false
+                checkpointThreadActive = false
                 break
             end
         end
     end)
 end)
 
+
 RegisterNetEvent('qbx-street-racing:resetRace', function()
     raceActive = false
+    checkpointThreadActive = false
+
     if DoesBlipExist(raceCheckpoint) then
         RemoveBlip(raceCheckpoint)
         raceCheckpoint = nil
     end
-    -- Optionally reset other flags like isInvited etc.
+
+    isInvited = false
+    isReady = false
+    currentCheckpoint = nil
 end)
 
 RegisterCommand("raceleaderboard", function()
