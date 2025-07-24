@@ -124,7 +124,6 @@ RegisterNetEvent('qbx-street-racing:resetRace', function()
 
     isInvited = false
     isReady = false
-    currentCheckpoint = nil
 end)
 
 RegisterCommand("raceleaderboard", function()
