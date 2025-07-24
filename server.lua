@@ -186,6 +186,11 @@ RegisterNetEvent('qbx-street-racing:declineRace', function()
             break
         end
     end
+
+    local Player = QBCore.Functions.GetPlayer(src)
+    if Player then
+        Player.Functions.SetMetaData('inrace', false)
+    end
 end)
 
 RegisterNetEvent('qbx-street-racing:unlockPlayer', function()
