@@ -122,7 +122,6 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
 
             raceData = { isActive = false, buyIn = 0, coords = nil, confirmationOpen = false }
             participants = {}
-            readyStatus = {}
             return
         end
 
