@@ -7,6 +7,27 @@ local raceData = {
     coords = nil
 }
 
+local function FindRaceDestination(src)
+    local ped = GetPlayerPed(src)
+    local origin = GetEntityCoords(ped)
+    local desired = Config.RaceDistance
+    local tolerance = 100.0  -- Adjust tolerance as needed
+    local maxAttempts = 50
+
+    for i = 1, maxAttempts do
+        -- Vary the node index to search
+        local found, candidate = GetNthClosestVehicleNode(origin.x, origin.y, origin.z, i * 2, 0, 0, 0)
+        if found then
+            local dist = #(candidate - origin)
+            if math.abs(dist - desired) <= tolerance then
+                return true, candidate
+            end
+        end
+    end
+
+    return false, nil
+end
+
 local function resetRace()
     for _, data in pairs(participants) do
         local src = data.src
