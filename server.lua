@@ -9,9 +9,9 @@ local raceData = {
 local function resetRace()
     for _, data in pairs(participants) do
         local src = data.src
-        local player = QBCore.Functions.GetPlayer(src)
-        if player then
-            player.Functions.SetMetaData('inrace', false)
+        local Player = QBCore.Functions.GetPlayer(src)
+        if Player then
+            Player.Functions.SetMetaData('inrace', false)
         end
         TriggerClientEvent('qbx-street-racing:unlockPlayer', src)
         TriggerClientEvent('qbx-street-racing:resetInviteFlag', src)
@@ -20,6 +20,7 @@ local function resetRace()
     readyStatus = {}
     raceData = { isActive = false, buyIn = 0, coords = nil }
 end
+
 
 
 RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
@@ -161,7 +162,7 @@ RegisterNetEvent('qbx-street-racing:confirmRace', function()
             if not p.confirmed then
                 if player.Functions.RemoveMoney('cash', raceData.buyIn, "street-race-buyin") then
                     participants[i].confirmed = true
-                    QBCore.Functions.SetPlayerMeta(src, 'inrace', true)
+                    player.Functions.SetMetaData('inrace', true)
                     TriggerClientEvent('QBCore:Notify', src, 'You have joined the race!', 'success')
                 else
                     TriggerClientEvent('QBCore:Notify', src, 'Insufficient funds for buy-in.', 'error')
@@ -171,6 +172,7 @@ RegisterNetEvent('qbx-street-racing:confirmRace', function()
         end
     end
 end)
+
 
 
 RegisterNetEvent('qbx-street-racing:declineRace', function()
@@ -215,11 +217,10 @@ AddEventHandler('playerDropped', function(reason)
     local src = source
     for i, p in ipairs(participants) do
         if p.src == src then
-            -- Reset 'inrace' metadata for this player
-            QBCore.Functions.SetPlayerMeta(src, 'inrace', false)
-            
-            -- Optionally, notify or log here (not required since player dropped)
-            
+            local Player = QBCore.Functions.GetPlayer(src)
+            if Player then
+                Player.Functions.SetMetaData('inrace', false)
+            end
             table.remove(participants, i)
             break
         end
