@@ -58,10 +58,20 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
 
     CreateThread(function()
         Wait(Config.ConfirmationTimeout * 1000)
-        local readyCount = 0
+
+        -- Cleanup: Remove declined/unconfirmed participants
+        local confirmedParticipants = {}
         for _, p in pairs(participants) do
-            if p.confirmed then readyCount += 1 end
+            if p.confirmed then
+                table.insert(confirmedParticipants, p)
+            else
+                QBCore.Functions.SetPlayerMeta(p.src, 'inrace', false)
+                TriggerClientEvent('QBCore:Notify', p.src, 'You declined the race or did not respond.', 'error')
+            end
         end
+        participants = confirmedParticipants
+
+        local readyCount = #participants
 
         if readyCount < 2 then
             for _, p in pairs(participants) do
@@ -98,6 +108,7 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
         end
     end)
 end)
+
 
 
 RegisterNetEvent('qbx-street-racing:confirmRace', function()
