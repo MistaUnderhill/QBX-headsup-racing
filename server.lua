@@ -199,3 +199,17 @@ RegisterNetEvent('qbx-street-racing:requestLeaderboard', function()
     table.sort(leaderboard, function(a, b) return a.wins > b.wins end)
     TriggerClientEvent('qbx-street-racing:showLeaderboard', src, leaderboard)
 end)
+
+
+AddEventHandler('onResourceStart', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    local players = QBCore.Functions.GetPlayers()
+    for _, src in pairs(players) do
+        TriggerClientEvent('qbx-street-racing:resetInviteFlag', src)
+    end
+end)
+
+AddEventHandler('playerSpawned', function()
+    local src = source
+    TriggerClientEvent('qbx-street-racing:resetInviteFlag', src)
+end)
