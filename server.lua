@@ -81,14 +81,20 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
             return
         end
 
-        -- Generate destination
+        -- Generate destination within ±100m of Config.RaceDistance
         local origin = GetEntityCoords(GetPlayerPed(src))
         local found, coords
-        local maxAttempts = 20
 
-        for i = 1, maxAttempts do
-            found, coords = GetNthClosestVehicleNode(origin.x, origin.y, origin.z, i * 5, 0, 0, 0)
-            if found then break end
+        local nodeSpacing = 10 -- assumed node spacing in meters
+        local minNodeIndex = math.floor((Config.RaceDistance - 100) / nodeSpacing)
+        local maxNodeIndex = math.floor((Config.RaceDistance + 100) / nodeSpacing)
+        local maxAttempts = maxNodeIndex - minNodeIndex + 1
+
+        for i = minNodeIndex, maxNodeIndex do
+            found, coords = GetNthClosestVehicleNode(origin.x, origin.y, origin.z, i, 0, 0, 0)
+            if found then
+                break
+            end
         end
 
         if not found then
@@ -108,6 +114,7 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
         end
     end)
 end)
+
 
 
 
