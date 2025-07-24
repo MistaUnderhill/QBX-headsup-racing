@@ -38,13 +38,11 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
         return
     end
         
-    -- Validate buyIn amount first
     if not buyIn or type(buyIn) ~= "number" or buyIn < Config.MinBuyIn or buyIn > Config.MaxBuyIn then
         TriggerClientEvent('QBCore:Notify', src, 'Buy-in must be between $'..Config.MinBuyIn..' and $'..Config.MaxBuyIn, 'error')
         return
     end
 
-    -- Deduct initiator’s buy-in early
     if not Player.Functions.RemoveMoney('cash', buyIn, "street-race-buyin") then
         TriggerClientEvent('QBCore:Notify', src, 'Insufficient funds for buy-in.', 'error')
         return
@@ -53,7 +51,6 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
     local node, distance = GetNthClosestVehicleNode(playerCoords.x, playerCoords.y, playerCoords.z, Config.RaceDistance)
     if not node then
-        -- Refund initiator on failure to find node
         Player.Functions.AddMoney('cash', buyIn, "street-race-buyin-refund")
         TriggerClientEvent('QBCore:Notify', src, 'Failed to find a race destination.', 'error')
         return
@@ -86,13 +83,11 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
         end
     end
 
-    -- Start confirmation timeout
     CreateThread(function()
         Wait(Config.ConfirmationTimeout * 1000)
 
         raceData.confirmationOpen = false 
 
-        -- Filter confirmed participants only
         local confirmedParticipants = {}
         for _, data in pairs(participants) do
             if data.confirmed then
@@ -119,7 +114,6 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
                     p.Functions.SetMetaData('inrace', false)
                 end
             end
-            -- Refund initiator if race cancelled here, as race never started
             local initiator = QBCore.Functions.GetPlayer(src)
             if initiator then
                 initiator.Functions.AddMoney('cash', buyIn, "street-race-buyin-refund")
@@ -132,7 +126,6 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
             return
         end
 
-        -- Lock participants and start countdown
         for _, data in pairs(participants) do
             TriggerClientEvent('qbx-street-racing:lockPlayer', data.src)
             TriggerClientEvent('qbx-street-racing:startCountdown', data.src)
@@ -206,10 +199,10 @@ RegisterNetEvent('qbx-street-racing:finishRace', function()
     -- Prevent negative or zero payout
     if payout <= 0 then
         payout = 0
-        QBCore.Functions.Notify(src, 'You won the race, but the tax took all your winnings.', 'error')
+        TriggerClientEvent('QBCore:Notify', src, 'You won the race, but the tax took all your winnings.', 'error')
     else
         Player.Functions.AddMoney('cash', payout)
-        QBCore.Functions.Notify(src, 'You won the race! Payout: $'..payout)
+        TriggerClientEvent('QBCore:Notify', src, 'You won the race! Payout: $'..payout, 'success')
     end
 
     -- Always record the win, even with zero payout
