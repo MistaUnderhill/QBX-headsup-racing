@@ -219,19 +219,43 @@ RegisterNetEvent('qbx-street-racing:finishRace', function()
     resetRace()
 end)
 
-AddEventHandler('playerDropped', function(reason)
+AddEventHandler('playerDropped', function()
     local src = source
-    for i, p in ipairs(participants) do
-        if p.src == src then
-            local Player = QBCore.Functions.GetPlayer(src)
-            if Player then
-                Player.Functions.SetMetaData('inrace', false)
-            end
+
+    -- Remove from participants if in race
+    for i = #participants, 1, -1 do
+        if participants[i].src == src then
             table.remove(participants, i)
-            break
+        end
+    end
+
+    -- Release metadata if race is active
+    if raceData.isActive then
+        local Player = QBCore.Functions.GetPlayer(src)
+        if Player then
+            Player.Functions.SetMetaData('inrace', false)
+        end
+
+        -- Cancel the race if too few participants remain
+        if #participants < 2 then
+            for _, data in pairs(participants) do
+                local p = QBCore.Functions.GetPlayer(data.src)
+                if p then
+                    p.Functions.SetMetaData('inrace', false)
+                    p.Functions.AddMoney('cash', raceData.buyIn, "street-race-buyin-refund")
+                    TriggerClientEvent('QBCore:Notify', data.src, 'Race canceled. Not enough racers.', 'error')
+                    TriggerClientEvent('qbx-street-racing:unlockPlayer', data.src)
+                    TriggerClientEvent('qbx-street-racing:resetInviteFlag', data.src)
+                end
+            end
+
+            -- Fully reset race state
+            raceData = { isActive = false, buyIn = 0, coords = nil, confirmationOpen = false }
+            participants = {}
         end
     end
 end)
+
 
 
 RegisterNetEvent('qbx-street-racing:requestLeaderboard', function()
