@@ -100,12 +100,16 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
         local nodeSpacing = 10 -- assumed node spacing in meters
         local minNodeIndex = math.floor((Config.RaceDistance - 100) / nodeSpacing)
         local maxNodeIndex = math.floor((Config.RaceDistance + 100) / nodeSpacing)
-        local maxAttempts = maxNodeIndex - minNodeIndex + 1
 
         for i = minNodeIndex, maxNodeIndex do
-            found, coords = GetNthClosestVehicleNode(origin.x, origin.y, origin.z, i, 0, 0, 0)
-            if found then
-                break
+            local nodeFound, nodeCoords = GetNthClosestVehicleNode(origin.x, origin.y, origin.z, i, 0, 0, 0)
+            if nodeFound then
+                local distFromOrigin = #(vector3(origin.x, origin.y, origin.z) - nodeCoords)
+                if distFromOrigin >= (Config.RaceDistance - 100) and distFromOrigin <= (Config.RaceDistance + 100) then
+                    found = true
+                    coords = nodeCoords
+                    break
+                end
             end
         end
 
