@@ -1,6 +1,5 @@
 local QBCore = exports['qbx-core']:GetCoreObject()
 local participants = {}
-local readyStatus = {}
 local raceData = {
     isActive = false,
     buyIn = 0,
