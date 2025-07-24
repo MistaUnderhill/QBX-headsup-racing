@@ -7,27 +7,6 @@ local raceData = {
     coords = nil
 }
 
-local function FindRaceDestination(src)
-    local ped = GetPlayerPed(src)
-    local origin = GetEntityCoords(ped)
-    local desired = Config.RaceDistance
-    local tolerance = 100.0  -- Adjust tolerance as needed
-    local maxAttempts = 50
-
-    for i = 1, maxAttempts do
-        -- Vary the node index to search
-        local found, candidate = GetNthClosestVehicleNode(origin.x, origin.y, origin.z, i * 2, 0, 0, 0)
-        if found then
-            local dist = #(candidate - origin)
-            if math.abs(dist - desired) <= tolerance then
-                return true, candidate
-            end
-        end
-    end
-
-    return false, nil
-end
-
 local function resetRace()
     for _, data in pairs(participants) do
         local src = data.src
@@ -90,26 +69,34 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function()
             return
         end
 
-        -- Generate destination
-        local origin = GetEntityCoords(GetPlayerPed(src))
-        local found, coords = GetNthClosestVehicleNode(origin.x, origin.y, origin.z, math.floor(Config.RaceDistance / 10), 0, 0, 0)
-        if not found then
-            TriggerClientEvent('QBCore:Notify', src, 'Could not find a valid race destination!', 'error')
-            resetRace()
-            return
-        end
+-- Generate destination
+local origin = GetEntityCoords(GetPlayerPed(src))
+local found, coords
+local maxAttempts = 20 -- Max number of node search attempts
 
-        raceData.coords = coords
+for i = 1, maxAttempts do
+    found, coords = GetNthClosestVehicleNode(origin.x, origin.y, origin.z, i * 5, 0, 0, 0)
+    if found then
+        break
+    end
+end
 
-        for _, p in pairs(participants) do
-            if p.confirmed then
-                TriggerClientEvent('qbx-street-racing:lockPlayer', p.src)
-                TriggerClientEvent('qbx-street-racing:setCheckpoint', p.src, coords)
-                TriggerClientEvent('qbx-street-racing:startCountdown', p.src)
-            end
-        end
-    end)
-end)
+if not found then
+    TriggerClientEvent('QBCore:Notify', src, 'Could not find a valid race destination after multiple attempts!', 'error')
+    resetRace()
+    return
+end
+
+raceData.coords = coords
+
+for _, p in pairs(participants) do
+    if p.confirmed then
+        TriggerClientEvent('qbx-street-racing:lockPlayer', p.src)
+        TriggerClientEvent('qbx-street-racing:setCheckpoint', p.src, coords)
+        TriggerClientEvent('qbx-street-racing:startCountdown', p.src)
+    end
+end
+
 
 RegisterNetEvent('qbx-street-racing:confirmRace', function()
     local src = source
