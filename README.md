@@ -14,13 +14,13 @@
 Run this in your database:
 
 ```sql
-CREATE TABLE IF NOT EXISTS `players` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `name` VARCHAR(64) NOT NULL,
-    `metadata` TEXT NOT NULL DEFAULT '{}',
-    -- other columns like identifiers, cash, etc. as per your existing schema
-    INDEX (`name`)
-);
+UPDATE players
+SET metadata = JSON_SET(
+    IF(metadata IS NULL OR metadata = '', '{}', metadata),
+    '$.racewins',
+    0
+)
+WHERE JSON_EXTRACT(metadata, '$.racewins') IS NULL;
 ```
 
 ### 2. Add to server.cfg:
