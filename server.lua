@@ -9,7 +9,7 @@ local raceData = {
 local function resetRace()
     for _, data in pairs(participants) do
         local src = data.src
-        QBCore.Functions.SetPlayerMeta(src, 'inrace', false)
+        Player.Functions.SetMetaData('inrace', false)
         TriggerClientEvent('qbx-street-racing:unlockPlayer', src)
         TriggerClientEvent('qbx-street-racing:resetInviteFlag', src)
     end
@@ -83,6 +83,16 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
             return
         end
 
+        -- Deduct buy-in from race initiator
+        local initiator = QBCore.Functions.GetPlayer(src)
+        if initiator and initiator.Functions.RemoveMoney('cash', raceData.buyIn, "street-race-buyin") then
+            QBCore.Functions.SetPlayerMeta(src, 'inrace', true)
+        else
+            TriggerClientEvent('QBCore:Notify', src, 'Insufficient funds to start the race.', 'error')
+            resetRace()
+            return
+        end
+                
         -- Generate destination within ±100m of Config.RaceDistance
         local origin = GetEntityCoords(GetPlayerPed(src))
         local found, coords
