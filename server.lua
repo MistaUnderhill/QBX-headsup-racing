@@ -65,6 +65,7 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
 
     participants = {}
 
+    -- Add initiator first
     Player.Functions.SetMetaData('inrace', true)
     table.insert(participants, { src = src, name = Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname, confirmed = true })
 
@@ -75,14 +76,22 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
             if other and not other.PlayerData.metadata['inrace'] then
                 local dist = #(GetEntityCoords(GetPlayerPed(id)) - playerCoords)
                 if dist <= Config.JoinRadius then
-                    table.insert(participants, { src = id, confirmed = false })
-                    other.Functions.SetMetaData('inrace', true)
-                    TriggerClientEvent('qbx-street-racing:inviteToRace', id)
+                    -- Enforce max racers limit including initiator
+                    if #participants < Config.MaxRacers then
+                        table.insert(participants, { src = id, confirmed = false })
+                        other.Functions.SetMetaData('inrace', true)
+                        TriggerClientEvent('qbx-street-racing:inviteToRace', id)
+                    else
+                        -- Optional: Notify initiator max racers reached and stop inviting
+                        TriggerClientEvent('QBCore:Notify', src, 'Maximum racers reached.', 'info')
+                        break
+                    end
                 end
             end
         end
     end
 
+    -- Start confirmation timeout thread (rest of your existing logic)
     CreateThread(function()
         Wait(Config.ConfirmationTimeout * 1000)
 
@@ -122,6 +131,7 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
 
             raceData = { isActive = false, buyIn = 0, coords = nil, confirmationOpen = false }
             participants = {}
+            readyStatus = {}
             return
         end
 
