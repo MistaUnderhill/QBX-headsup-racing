@@ -193,9 +193,15 @@ RegisterNetEvent('qbx-street-racing:unlockPlayer', function()
     TriggerClientEvent('qbx-street-racing:unlockPlayer', src)
 end)
 
-RegisterNetEvent('qbx-street-racing:finishRace', function()
+RegisterNetEvent('qbx-street-racing:finishRace', function() 
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
+
+    if not Player then
+        print(("qbx-street-racing:finishRace - Player not found for source %s"):format(src))
+        return
+    end
+
     local winnings = raceData.buyIn * #participants
     local tax = Config.RaceTax * winnings
     local payout = math.floor(winnings - tax)
@@ -203,7 +209,7 @@ RegisterNetEvent('qbx-street-racing:finishRace', function()
     -- Prevent negative or zero payout
     if payout <= 0 then
         payout = 0
-        TriggerClientEvent('QBCore:Notify', src, 'You won the race, but the tax took all your winnings.', 'error')
+        TriggerClientEvent('QBCore:Notify', src, 'You won, but after tax ($'..tax..'), you receive no payout.', 'error')
     else
         Player.Functions.AddMoney('cash', payout)
         TriggerClientEvent('QBCore:Notify', src, 'You won the race! Payout: $'..payout, 'success')
@@ -215,6 +221,7 @@ RegisterNetEvent('qbx-street-racing:finishRace', function()
 
     resetRace()
 end)
+
 
 AddEventHandler('playerDropped', function()
     local src = source
