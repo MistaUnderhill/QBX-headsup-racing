@@ -43,6 +43,7 @@ RegisterNetEvent('qbx-street-racing:inviteToRace', function(data)
             Wait(0)
             if IsControlJustPressed(0, 38) then -- E
                 TriggerServerEvent('qbx-street-racing:confirmRace')
+                TriggerEvent('qbx-street-racing:showConfirmVisual')        
                 isInvited = false
                 break
             end
