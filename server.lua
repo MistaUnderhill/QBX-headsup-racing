@@ -27,116 +27,81 @@ end
 RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
 
-    if raceData.isActive then
-        TriggerClientEvent('QBCore:Notify', src, 'A race is already in progress!', 'error')
+    if Player.PlayerData.metadata['inrace'] then
+        TriggerClientEvent('QBCore:Notify', src, 'You are already in a race.', 'error')
         return
     end
 
-    raceData.isActive = true
-        
-    if not buyIn or type(buyIn) ~= "number" or buyIn < Config.MinBuyIn or buyIn > Config.MaxBuyIn then
-        TriggerClientEvent('QBCore:Notify', src, 'Buy-in must be between $'..Config.MinBuyIn..' and $'..Config.MaxBuyIn, 'error')
+    local playerCoords = GetEntityCoords(GetPlayerPed(src))
+    local node, distance = GetNthClosestVehicleNode(playerCoords.x, playerCoords.y, playerCoords.z, Config.RaceDistance)
+    if not node then
+        TriggerClientEvent('QBCore:Notify', src, 'Failed to find a race destination.', 'error')
         return
     end
 
-    -- Initialize participant list
+    raceData = {
+        isActive = true,
+        buyIn = buyIn,
+        coords = vector3(node.x, node.y, node.z),
+        confirmationOpen = true 
+    }
+
     participants = {}
+    readyStatus = {}
+
+    -- Deduct initiator’s buy-in manually
+    if not Player.Functions.RemoveMoney('cash', buyIn) then
+        TriggerClientEvent('QBCore:Notify', src, 'Insufficient funds for buy-in.', 'error')
+        raceData = { isActive = false, buyIn = 0, coords = nil, confirmationOpen = false }
+        return
+    end
+
+    Player.Functions.SetMetaData('inrace', true)
+    table.insert(participants, { src = src, name = Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname })
 
     local players = QBCore.Functions.GetPlayers()
-    for _, id in ipairs(players) do
-        if #participants >= Config.MaxRacers then break end
+    for _, id in pairs(players) do
         if id ~= src then
-            local targetPlayer = QBCore.Functions.GetPlayer(id)
-            if targetPlayer and not targetPlayer.PlayerData.metadata['inrace'] then
-                local targetPed = GetPlayerPed(id)
-                if IsPedInAnyVehicle(targetPed, false) then
-                    local dist = #(GetEntityCoords(GetPlayerPed(src)) - GetEntityCoords(targetPed))
-                    if dist < Config.JoinDistance then
-                        participants[#participants+1] = { src = id, confirmed = false }
-                        targetPlayer.Functions.SetMetaData('inrace', true)
-                        TriggerClientEvent('qbx-street-racing:inviteToRace', id)
-                    end
+            local other = QBCore.Functions.GetPlayer(id)
+            if other and not other.PlayerData.metadata['inrace'] then
+                local dist = #(GetEntityCoords(GetPlayerPed(id)) - playerCoords)
+                if dist <= Config.JoinRadius then
+                    TriggerClientEvent('qbx-street-racing:inviteToRace', id)
+                    TriggerClientEvent('qbx-street-racing:setCheckpoint', id, raceData.coords)
                 end
             end
         end
     end
 
-    participants[#participants+1] = { src = src, confirmed = true }
-    Player.Functions.SetMetaData('inrace', true)
-    raceData.buyIn = buyIn
-
+    -- Start confirmation timeout
     CreateThread(function()
         Wait(Config.ConfirmationTimeout * 1000)
 
-        -- Cleanup: Remove declined/unconfirmed participants
-        local confirmedParticipants = {}
-        for _, p in pairs(participants) do
-            if p.confirmed then
-                table.insert(confirmedParticipants, p)
-            else
-                local pPlayer = QBCore.Functions.GetPlayer(p.src)
-                if pPlayer then
-                    pPlayer.Functions.SetMetaData('inrace', false)
+        raceData.confirmationOpen = false 
+
+        if #participants < 2 then
+            for _, data in pairs(participants) do
+                local p = QBCore.Functions.GetPlayer(data.src)
+                if p then
+                    p.Functions.SetMetaData('inrace', false)
                 end
-                TriggerClientEvent('QBCore:Notify', p.src, 'You declined the race or did not respond.', 'error')
+                TriggerClientEvent('QBCore:Notify', data.src, 'Not enough racers confirmed. Race canceled.', 'error')
+                TriggerClientEvent('qbx-street-racing:unlockPlayer', data.src)
+                TriggerClientEvent('qbx-street-racing:resetInviteFlag', data.src)
             end
-        end
-        participants = confirmedParticipants
 
-        local readyCount = #participants
-
-        if readyCount < 2 then
-            for _, p in pairs(participants) do
-                TriggerClientEvent('QBCore:Notify', p.src, 'Racers not ready, race cancelled', 'error')
-            end
-            resetRace()
+            participants = {}
+            readyStatus = {}
+            raceData = { isActive = false, buyIn = 0, coords = nil, confirmationOpen = false }
             return
         end
 
-        -- Deduct buy-in from race initiator
-        if Player and Player.Functions.RemoveMoney('cash', raceData.buyIn, "street-race-buyin") then
-            Player.Functions.SetMetaData('inrace', true)
-        else
-            TriggerClientEvent('QBCore:Notify', src, 'Insufficient funds to start the race.', 'error')
-            resetRace()
-            return
-        end
-                
-        -- Generate destination within ±100m of Config.RaceDistance
-        local origin = GetEntityCoords(GetPlayerPed(src))
-        local found, coords
-
-        local nodeSpacing = 10 -- assumed node spacing in meters
-        local minNodeIndex = math.floor((Config.RaceDistance - 100) / nodeSpacing)
-        local maxNodeIndex = math.floor((Config.RaceDistance + 100) / nodeSpacing)
-
-        for i = minNodeIndex, maxNodeIndex do
-            local nodeFound, nodeCoords = GetNthClosestVehicleNode(origin.x, origin.y, origin.z, i, 0, 0, 0)
-            if nodeFound then
-                local distFromOrigin = #(vector3(origin.x, origin.y, origin.z) - nodeCoords)
-                if distFromOrigin >= (Config.RaceDistance - 100) and distFromOrigin <= (Config.RaceDistance + 100) then
-                    found = true
-                    coords = nodeCoords
-                    break
-                end
-            end
-        end
-
-        if not found then
-            TriggerClientEvent('QBCore:Notify', src, 'Could not find a valid race destination after multiple attempts!', 'error')
-            resetRace()
-            return
-        end
-
-        raceData.coords = coords
-
-        for _, p in pairs(participants) do
-            if p.confirmed then
-                TriggerClientEvent('qbx-street-racing:lockPlayer', p.src)
-                TriggerClientEvent('qbx-street-racing:setCheckpoint', p.src, coords)
-                TriggerClientEvent('qbx-street-racing:startCountdown', p.src)
-            end
+        -- Lock participants and start countdown
+        for _, data in pairs(participants) do
+            TriggerClientEvent('qbx-street-racing:lockPlayer', data.src)
+            TriggerClientEvent('qbx-street-racing:startCountdown', data.src)
         end
     end)
 end)
