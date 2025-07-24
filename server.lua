@@ -9,7 +9,10 @@ local raceData = {
 local function resetRace()
     for _, data in pairs(participants) do
         local src = data.src
-        Player.Functions.SetMetaData('inrace', false)
+        local player = QBCore.Functions.GetPlayer(src)
+        if player then
+            player.Functions.SetMetaData('inrace', false)
+        end
         TriggerClientEvent('qbx-street-racing:unlockPlayer', src)
         TriggerClientEvent('qbx-street-racing:resetInviteFlag', src)
     end
@@ -17,6 +20,7 @@ local function resetRace()
     readyStatus = {}
     raceData = { isActive = false, buyIn = 0, coords = nil }
 end
+
 
 RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
     local src = source
