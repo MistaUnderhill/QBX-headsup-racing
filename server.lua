@@ -27,6 +27,8 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
         return
     end
 
+    raceData.isActive = true
+        
     if not buyIn or type(buyIn) ~= "number" or buyIn < Config.MinBuyIn or buyIn > Config.MaxBuyIn then
         TriggerClientEvent('QBCore:Notify', src, 'Buy-in must be between $'..Config.MinBuyIn..' and $'..Config.MaxBuyIn, 'error')
         return
@@ -54,7 +56,7 @@ RegisterNetEvent('qbx-street-racing:startRaceRadial', function(buyIn)
     participants[#participants+1] = { src = src, confirmed = true }
     QBCore.Functions.SetPlayerMeta(src, 'inrace', true)
     raceData.buyIn = buyIn
-    raceData.isActive = true
+
 
     CreateThread(function()
         Wait(Config.ConfirmationTimeout * 1000)
