@@ -124,7 +124,6 @@ RegisterNetEvent('qbx-street-racing:resetRace', function()
     end
 
     isInvited = false
-    isReady = false
 end)
 
 RegisterCommand("raceleaderboard", function()
