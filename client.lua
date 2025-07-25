@@ -145,3 +145,4 @@ end)
 
 RegisterNetEvent('qbx-street-racing:showConfirmVisual', function()
     QBCore.Functions.Notify("Race joined!", "success")
+end)
