@@ -59,22 +59,17 @@ RegisterNetEvent('qbx-street-racing:lockPlayer', function()
 end)
 
 RegisterNetEvent('qbx-street-racing:startCountdown', function()
-    if isCountdownActive then return end  -- Prevent multiple countdowns
-    isCountdownActive = true
+    local countdown = Config.CountdownTime or 3
 
-    local countdown = Config.CountdownTime
-    CreateThread(function()
-        while countdown > 0 do
-            TriggerEvent('chat:addMessage', { args = { tostring(countdown) } })
-            Wait(1000)
-            countdown -= 1
-        end
-        TriggerEvent('chat:addMessage', { args = { 'GO!' } })
-        TriggerServerEvent('qbx-street-racing:unlockPlayer')
+    while countdown > 0 do
+        QBCore.Functions.Notify(tostring(countdown), "primary")
+        Wait(1000)
+        countdown -= 1
+    end
 
-        isCountdownActive = false -- Reset flag when countdown finishes
-    end)
+    QBCore.Functions.Notify("GO!", "success")
 end)
+
 
 RegisterNetEvent('qbx-street-racing:unlockPlayer', function()
     local player = PlayerPedId()
@@ -130,13 +125,14 @@ RegisterCommand("raceleaderboard", function()
     TriggerServerEvent("qbx-street-racing:requestLeaderboard")
 end)
 
-RegisterNetEvent("qbx-street-racing:showLeaderboard", function(data)
-    for i, racer in ipairs(data) do
-        TriggerEvent("chat:addMessage", {
-            args = { ("%d. %s - %d wins"):format(i, racer.name, racer.wins) }
-        })
+RegisterNetEvent('qbx-street-racing:showLeaderboard', function(leaderboard)
+    QBCore.Functions.Notify("Race Leaderboard:", "primary")
+
+    for i, racer in ipairs(leaderboard) do
+        QBCore.Functions.Notify(i .. ". " .. racer.name .. " (" .. racer.time .. "s)", "inform")
     end
 end)
+
 
 RegisterNetEvent('qbx-street-racing:resetInviteFlag', function()
     isInvited = false
